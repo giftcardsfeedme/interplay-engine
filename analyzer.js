@@ -1,4 +1,3 @@
-// Backend API base URL (Hugging Face Space)
 const API_URL = 'https://giftcardsfeedme-interplay-engine.hf.space';
 
 async function runAnalysis(vocalData, drumData) {
