@@ -1,0 +1,25 @@
+body {
+    background: #050505;
+    color: #ffffff;
+    margin: 0;
+    padding: 20px;
+    font-family: monospace;
+}
+
+#container {
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 20px;
+    font-size: 20px;
+    letter-spacing: 0.08em;
+}
+
+canvas {
+    background: #0a0a0a;
+    border: 1px solid #222;
+}
