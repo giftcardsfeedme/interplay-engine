@@ -43,6 +43,3 @@ function renderChart(matrix) {
         }
     });
 }
-
-// Example: you’ll call runAnalysis(vocals, drums) from your own UI hook
-// runAnalysis(sampleVocals, sampleDrums);
