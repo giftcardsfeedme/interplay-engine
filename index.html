@@ -9,6 +9,21 @@
 <body>
     <div id="container">
         <h1>Cadence-Beat Interplay Engine</h1>
+
+        <div id="controls">
+            <div class="upload-row">
+                <label for="vocalFile">Vocal Stem</label>
+                <input type="file" id="vocalFile" accept="audio/*">
+            </div>
+            <div class="upload-row">
+                <label for="drumFile">Drum Stem</label>
+                <input type="file" id="drumFile" accept="audio/*">
+            </div>
+            <button id="analyzeBtn" onclick="handleAnalyze()">Analyze Interplay</button>
+            <button id="demoBtn" onclick="runDemo()">Run Demo</button>
+        </div>
+
+        <div id="status"></div>
         <canvas id="interplayChart"></canvas>
     </div>
     <script src="analyzer.js"></script>
