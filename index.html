@@ -2,29 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadence-Beat Interplay Engine</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div id="container">
-        <h1>Cadence-Beat Interplay Engine</h1>
+    <div id="app">
+        <header>
+            <h1>Cadence-Beat Interplay Engine</h1>
+            <p class="subtitle">Vocal × Drum Stem Analysis</p>
+        </header>
 
-        <div id="controls">
-            <div class="upload-row">
-                <label for="vocalFile">Vocal Stem</label>
-                <input type="file" id="vocalFile" accept="audio/*">
+        <div id="upload-zone">
+            <div class="stem-upload" id="vocal-upload">
+                <div class="stem-label">VOCAL STEM</div>
+                <input type="file" id="vocalFile" accept=".mp3,.wav,audio/*">
+                <div class="file-name" id="vocalName">No file loaded</div>
             </div>
-            <div class="upload-row">
-                <label for="drumFile">Drum Stem</label>
-                <input type="file" id="drumFile" accept="audio/*">
+            <div class="stem-divider">×</div>
+            <div class="stem-upload" id="drum-upload">
+                <div class="stem-label">DRUM STEM</div>
+                <input type="file" id="drumFile" accept=".mp3,.wav,audio/*">
+                <div class="file-name" id="drumName">No file loaded</div>
             </div>
-            <button id="analyzeBtn" onclick="handleAnalyze()">Analyze Interplay</button>
-            <button id="demoBtn" onclick="runDemo()">Run Demo</button>
         </div>
 
-        <div id="status"></div>
-        <canvas id="interplayChart"></canvas>
+        <div id="action-bar">
+            <button id="analyzeBtn" onclick="handleAnalyze()" disabled>Analyze</button>
+            <button id="demoBtn" onclick="runDemo()">Demo Mode</button>
+        </div>
+
+        <div id="status-bar">
+            <span id="status"></span>
+            <span id="progress"></span>
+        </div>
+
+        <!-- PANEL 1: File Forensics -->
+        <section class="panel" id="panel-forensics">
+            <div class="panel-header">01 — File Forensics</div>
+            <div class="forensics-grid">
+                <div class="forensic-col">
+                    <div class="col-label">VOCAL</div>
+                    <div id="vocal-stats"></div>
+                    <canvas id="vocalWaveform" height="80"></canvas>
+                </div>
+                <div class="forensic-col">
+                    <div class="col-label">DRUM</div>
+                    <div id="drum-stats"></div>
+                    <canvas id="drumWaveform" height="80"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL 2: Deep Examination -->
+        <section class="panel" id="panel-examination">
+            <div class="panel-header">02 — Deep Examination</div>
+            <div class="exam-grid">
+                <div class="exam-block">
+                    <div class="block-label">Vocal Energy Over Time</div>
+                    <canvas id="vocalEnergy"></canvas>
+                </div>
+                <div class="exam-block">
+                    <div class="block-label">Drum Energy Over Time</div>
+                    <canvas id="drumEnergy"></canvas>
+                </div>
+                <div class="exam-block">
+                    <div class="block-label">Vocal Frequency Bands</div>
+                    <canvas id="vocalBands"></canvas>
+                </div>
+                <div class="exam-block">
+                    <div class="block-label">Drum Frequency Bands</div>
+                    <canvas id="drumBands"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL 3: Interplay -->
+        <section class="panel" id="panel-interplay">
+            <div class="panel-header">03 — Interplay Analysis</div>
+            <div id="interplay-scores"></div>
+            <div class="interplay-grid">
+                <div class="exam-block">
+                    <div class="block-label">Latency Map</div>
+                    <canvas id="interplayChart"></canvas>
+                </div>
+                <div class="exam-block">
+                    <div class="block-label">Energy Overlap</div>
+                    <canvas id="energyOverlap"></canvas>
+                </div>
+                <div class="exam-block full-width">
+                    <div class="block-label">Onset Sync Timeline</div>
+                    <canvas id="onsetSync"></canvas>
+                </div>
+            </div>
+        </section>
     </div>
     <script src="analyzer.js"></script>
 </body>
