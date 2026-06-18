@@ -1,7 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-    --vocal:  #00d4ff; /* Kept for analyzer.js, might still be used */
+    --vocal:  #00d4ff;
     --drum:   #ff8c00; /* Changed to a more orange hue */
     --kick:   #ff8c00;
     --snare:  #ffaf4d;
@@ -22,19 +22,39 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 #topnav {
     display: flex;
     align-items: center;
-    justify-content: center; /* Centered content */
-    padding: 12px 16px;
+    justify-content: space-between;
+    padding: 8px 16px;
     background: var(--bg2);
     border-bottom: 1px solid var(--border);
     gap: 12px;
-    flex-direction: column; /* Stack elements vertically */
-    text-align: center;
+    flex-wrap: wrap;
 }
-.nav-center { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.header-extra, .header-main { font-size: 11px; letter-spacing: 0.2em; color: var(--dim); }
-.header-extra span, .header-main span { margin: 0 6px; }
+.nav-left, .nav-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.nav-center { font-size: 11px; letter-spacing: 0.25em; color: var(--dim); }
+.nav-btn {
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); padding: 5px 12px; font-family: var(--font);
+    font-size: 10px; letter-spacing: 0.15em; cursor: pointer;
+    transition: all 0.15s;
+}
+.nav-btn:hover:not(:disabled) { border-color: var(--vocal); color: var(--vocal); }
+button.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+button.nav-btn.dim { color: var(--dim); }
+button.nav-btn.dim:hover { border-color: var(--drum); color: var(--drum); }
+.nav-tag { font-size: 10px; color: var(--dim); letter-spacing: 0.1em; }
 .nav-dot { color: var(--border); }
-#projectTitle { font-size: 24px; font-weight: bold; letter-spacing: 0.3em; margin-top: 4px; }
+input[type="file"] { display: none; }
+
+/* STATUS */
+#statusBar {
+    padding: 4px 16px;
+    font-size: 10px;
+    color: var(--dim);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.1em;
+    min-height: 22px;
+}
 
 /* WAVE STATION */
 #waveStation {
@@ -43,31 +63,31 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
     border-bottom: 1px solid var(--border);
     height: 250px; /* Increased height */
     overflow: hidden;
-    display: flex; /* Easiest way to center the input */
+    display: flex; 
     justify-content: center;
     align-items: center;
 }
-#waveLabel { position: static; /* Removed absolute positioning */ z-index: 10; }
+#waveLabel { position: static; z-index: 10; }
 #lyricInput {
     background: transparent;
     border: none;
     color: #fff;
-    font-family: 'Arial', sans-serif; /* A more fitting font */
-    font-size: 28px; /* Larger font */
+    font-family: 'Arial', sans-serif;
+    font-size: 28px;
     font-weight: bold;
     letter-spacing: 0.05em;
     text-align: center;
     width: 80vw;
     outline: none;
     padding: 2px 0;
-    text-shadow: 0 0 10px #00d4ff, 0 0 20px #00d4ff, 0 0 40px #ff00ff; /* Glowing effect */
+    text-shadow: 0 0 10px var(--vocal), 0 0 20px var(--vocal), 0 0 40px #ff00ff; /* Glowing effect */
 }
 #lyricInput::placeholder { color: #ffffff18; font-weight: normal; font-size: 14px; }
 #waveCanvas, #specCanvas {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    mix-blend-mode: lighten; /* Changed blend mode for better effect */
+    mix-blend-mode: lighten; 
 }
 #specCanvas { opacity: 0.6; mix-blend-mode: screen; }
 
@@ -77,6 +97,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
     border-bottom: 1px solid var(--border);
     padding: 16px;
 }
+
+.seq-header { display: none; }
+
 #seqGrid { display: flex; gap: 16px; align-items: stretch; }
 .seq-controls {
     display: flex;
@@ -107,19 +130,20 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 .seq-row { display: flex; align-items: center; }
 .row-label {
     font-size: 10px; letter-spacing: 0.15em;
-    color: var(--dim); width: auto; /* Width auto */
+    color: var(--dim);
 }
+#row-vocal { display: none; }
 .row-cells { display: flex; gap: 3px; flex: 1; }
 .seq-cell {
-    flex-basis: 2%; /* Using percentage for responsive width */
-    aspect-ratio: 1/1; /* Make them square */
-    height: auto; /* Reset height */
+    flex-basis: 2%;
+    aspect-ratio: 1/1;
+    height: auto;
     background: #3a3b4c44;
     border: 1px solid #ffffff0a;
     border-radius: 2px;
     transition: background 0.1s;
 }
-/* The provided image has a specific pattern, this is a generic active state */
+
 .seq-cell.active-kick  { background: var(--kick);  box-shadow: 0 0 6px var(--kick)88; }
 .seq-cell.active-snare { background: var(--snare); box-shadow: 0 0 6px var(--snare)88; }
 .seq-cell.active-hihat { background: var(--hi-hat); box-shadow: 0 0 4px var(--hi-hat)66; }
@@ -136,3 +160,38 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
     text-align: center;
 }
 
+/* PANELS */
+#panels { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.panel { border: 1px solid var(--border); display: none; }
+.panel.active { display: block; }
+.panel-header {
+    font-size: 10px; letter-spacing: 0.2em; color: var(--dim);
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+}
+.forensics-grid, .exam-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px; background: var(--border);
+}
+.forensic-col, .exam-block {
+    background: var(--bg); padding: 14px;
+}
+.exam-block.full-width { grid-column: 1 / -1; }
+.col-label { font-size: 10px; letter-spacing: 0.2em; margin-bottom: 10px; }
+.vocal-color { color: var(--vocal); }
+.drum-color  { color: var(--drum); }
+.block-label { font-size: 9px; letter-spacing: 0.15em; color: var(--dim); margin-bottom: 8px; }
+.stat-row {
+    display: flex; justify-content: space-between;
+    font-size: 10px; padding: 3px 0;
+    border-bottom: 1px solid #ffffff05;
+}
+.stat-key { color: var(--dim); }
+.stat-val { color: var(--text); }
+canvas { width: 100% !important; }
+
+@media (max-width: 600px) {
+    .forensics-grid, .exam-grid { grid-template-columns: 1fr; }
+    .exam-block.full-width { grid-column: 1; }
+    #lyricInput { font-size: 13px; }
+}
