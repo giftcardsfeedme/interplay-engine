@@ -15,17 +15,17 @@
         </header>
 
         <div id="upload-zone">
-            <div class="stem-upload" id="vocal-upload">
+            <label class="stem-upload" for="vocalFile">
                 <div class="stem-label">VOCAL STEM</div>
                 <input type="file" id="vocalFile" accept=".mp3,.wav,audio/*">
-                <div class="file-name" id="vocalName">No file loaded</div>
-            </div>
+                <div class="file-name" id="vocalName">Tap to load vocal stem</div>
+            </label>
             <div class="stem-divider">×</div>
-            <div class="stem-upload" id="drum-upload">
+            <label class="stem-upload" for="drumFile">
                 <div class="stem-label">DRUM STEM</div>
                 <input type="file" id="drumFile" accept=".mp3,.wav,audio/*">
-                <div class="file-name" id="drumName">No file loaded</div>
-            </div>
+                <div class="file-name" id="drumName">Tap to load drum stem</div>
+            </label>
         </div>
 
         <div id="action-bar">
@@ -38,7 +38,6 @@
             <span id="progress"></span>
         </div>
 
-        <!-- PANEL 1: File Forensics -->
         <section class="panel" id="panel-forensics">
             <div class="panel-header">01 — File Forensics</div>
             <div class="forensics-grid">
@@ -55,7 +54,6 @@
             </div>
         </section>
 
-        <!-- PANEL 2: Deep Examination -->
         <section class="panel" id="panel-examination">
             <div class="panel-header">02 — Deep Examination</div>
             <div class="exam-grid">
@@ -78,7 +76,6 @@
             </div>
         </section>
 
-        <!-- PANEL 3: Interplay -->
         <section class="panel" id="panel-interplay">
             <div class="panel-header">03 — Interplay Analysis</div>
             <div id="interplay-scores"></div>
