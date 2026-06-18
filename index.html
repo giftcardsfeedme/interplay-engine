@@ -11,7 +11,7 @@
     <div id="app">
         <header>
             <h1>Cadence-Beat Interplay Engine</h1>
-            <p class="subtitle">Vocal × Drum Stem Analysis</p>
+            <p class="subtitle">Vocal x Drum Stem Analysis</p>
         </header>
 
         <div id="upload-zone">
@@ -20,7 +20,7 @@
                 <input type="file" id="vocalFile" accept=".mp3,.wav,audio/*">
                 <div class="file-name" id="vocalName">Tap to load vocal stem</div>
             </label>
-            <div class="stem-divider">×</div>
+            <div class="stem-divider">x</div>
             <label class="stem-upload" for="drumFile">
                 <div class="stem-label">DRUM STEM</div>
                 <input type="file" id="drumFile" accept=".mp3,.wav,audio/*">
@@ -34,12 +34,11 @@
         </div>
 
         <div id="status-bar">
-            <span id="status"></span>
-            <span id="progress"></span>
+            <span id="status">Loading...</span>
         </div>
 
         <section class="panel" id="panel-forensics">
-            <div class="panel-header">01 — File Forensics</div>
+            <div class="panel-header">01 - File Forensics</div>
             <div class="forensics-grid">
                 <div class="forensic-col">
                     <div class="col-label">VOCAL</div>
@@ -55,7 +54,7 @@
         </section>
 
         <section class="panel" id="panel-examination">
-            <div class="panel-header">02 — Deep Examination</div>
+            <div class="panel-header">02 - Deep Examination</div>
             <div class="exam-grid">
                 <div class="exam-block">
                     <div class="block-label">Vocal Energy Over Time</div>
@@ -77,7 +76,7 @@
         </section>
 
         <section class="panel" id="panel-interplay">
-            <div class="panel-header">03 — Interplay Analysis</div>
+            <div class="panel-header">03 - Interplay Analysis</div>
             <div id="interplay-scores"></div>
             <div class="interplay-grid">
                 <div class="exam-block">
@@ -95,6 +94,8 @@
             </div>
         </section>
     </div>
-    <script src="analyzer.js"></script>
+
+    <!-- script deferred — fires after full DOM parse -->
+    <script src="analyzer.js" defer></script>
 </body>
 </html>
