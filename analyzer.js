@@ -10,47 +10,31 @@ const CONFIG = {
     ENERGY_WINDOW_SIZE:   512,
     FFT_SIZE:             2048,
     BAND_RANGES: {
-        sub:       [20,   80],
-        low:       [80,   300],
-        mid:       [300,  2000],
-        highmid:   [2000, 6000],
-        high:      [6000, 20000],
+        sub:     [20,   80],
+        low:     [80,   300],
+        mid:     [300,  2000],
+        highmid: [2000, 6000],
+        high:    [6000, 20000],
     },
     COLOR: {
-        vocal:   '#2ed573',
-        drum:    '#ff4757',
-        overlap: '#ffa502',
-        locked:  '#2ed573',
-        drift:   '#ff4757',
-        grid:    '#111',
-        tick:    '#333',
+        vocal:  '#2ed573',
+        drum:   '#ff4757',
+        locked: '#2ed573',
+        drift:  '#ff4757',
+        grid:   '#111',
+        tick:   '#333',
     },
 };
 
-// STATE
-const STATE = {
-    vocalBuffer: null,
-    drumBuffer:  null,
-    audioCtx:    null,
-    charts:      {},
-};
-
-// ─── BOOT ────────────────────────────────────────────────────────────────────
+const STATE = { vocalBuffer: null, drumBuffer: null, audioCtx: null, charts: {} };
 
 document.getElementById('vocalFile').addEventListener('change', e => {
     const f = e.target.files[0];
-    if (f) {
-        document.getElementById('vocalName').textContent = f.name;
-        checkReady();
-    }
+    if (f) { document.getElementById('vocalName').textContent = f.name; checkReady(); }
 });
-
 document.getElementById('drumFile').addEventListener('change', e => {
     const f = e.target.files[0];
-    if (f) {
-        document.getElementById('drumName').textContent = f.name;
-        checkReady();
-    }
+    if (f) { document.getElementById('drumName').textContent = f.name; checkReady(); }
 });
 
 function checkReady() {
@@ -59,429 +43,258 @@ function checkReady() {
     document.getElementById('analyzeBtn').disabled = !(v && d);
 }
 
-// ─── MAIN HANDLER ────────────────────────────────────────────────────────────
+function getCtx() {
+    if (!STATE.audioCtx || STATE.audioCtx.state === 'closed')
+        STATE.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return STATE.audioCtx;
+}
 
 async function handleAnalyze() {
     const vFile = document.getElementById('vocalFile').files[0];
     const dFile = document.getElementById('drumFile').files[0];
     if (!vFile || !dFile) return;
-
-    setStatus('Decoding audio...');
-    STATE.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
+    document.getElementById('analyzeBtn').disabled = true;
+    setStatus('Reading files...');
     try {
-        const [vBuf, dBuf] = await Promise.all([
-            decodeFile(vFile),
-            decodeFile(dFile),
-        ]);
-        STATE.vocalBuffer = vBuf;
-        STATE.drumBuffer  = dBuf;
+        const ctx = getCtx();
+        const [vArr, dArr] = await Promise.all([vFile.arrayBuffer(), dFile.arrayBuffer()]);
+        setStatus('Decoding vocal...');
+        let vBuf;
+        try { vBuf = await ctx.decodeAudioData(vArr); }
+        catch(e) { setStatus('Vocal decode failed: ' + e.message); document.getElementById('analyzeBtn').disabled = false; return; }
+        setStatus('Decoding drums...');
+        let dBuf;
+        try { dBuf = await ctx.decodeAudioData(dArr); }
+        catch(e) { setStatus('Drum decode failed: ' + e.message); document.getElementById('analyzeBtn').disabled = false; return; }
+        STATE.vocalBuffer = vBuf; STATE.drumBuffer = dBuf;
+        setStatus('Forensics...'); renderForensics(vBuf, dBuf);
+        setStatus('Examination...'); renderExamination(vBuf, dBuf);
+        setStatus('Interplay...'); await renderInterplay(vBuf, dBuf);
+        setStatus('Done.'); showPanels();
+    } catch(err) { setStatus('Error: ' + err.message); }
+    finally { document.getElementById('analyzeBtn').disabled = false; }
+}
 
-        setStatus('Running forensics...');
-        renderForensics(vBuf, dBuf);
-
-        setStatus('Running deep examination...');
-        renderExamination(vBuf, dBuf);
-
-        setStatus('Computing interplay...');
+async function runDemo() {
+    setStatus('Building demo...'); document.getElementById('demoBtn').disabled = true;
+    try {
+        const ctx = getCtx(); const sr = 44100; const dur = 8; const n = sr * dur;
+        const vData = new Float32Array(n).map((_,i) => (Math.random()*2-1)*0.5*Math.sin(i/200));
+        const dData = new Float32Array(n).map((_,i) => (i % Math.floor(sr*0.5)) < 2000 ? (Math.random()*2-1)*0.9 : (Math.random()*2-1)*0.05);
+        const vBuf = ctx.createBuffer(1,n,sr); vBuf.getChannelData(0).set(vData);
+        const dBuf = ctx.createBuffer(1,n,sr); dBuf.getChannelData(0).set(dData);
+        STATE.vocalBuffer = vBuf; STATE.drumBuffer = dBuf;
+        renderForensics(vBuf, dBuf); renderExamination(vBuf, dBuf);
         await renderInterplay(vBuf, dBuf);
-
-        setStatus('');
-        showPanels();
-    } catch (err) {
-        console.error('[BWB] Analysis failed:', err);
-        setStatus('Decode failed — check file format.');
-    }
+        setStatus('Demo loaded.'); showPanels();
+    } catch(err) { setStatus('Demo error: ' + err.message); }
+    finally { document.getElementById('demoBtn').disabled = false; }
 }
-
-async function decodeFile(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    return STATE.audioCtx.decodeAudioData(arrayBuffer);
-}
-
-// ─── PANEL 1: FORENSICS ──────────────────────────────────────────────────────
 
 function renderForensics(vBuf, dBuf) {
-    renderStats('vocal-stats', vBuf);
-    renderStats('drum-stats',  dBuf);
+    renderStats('vocal-stats', vBuf); renderStats('drum-stats', dBuf);
     renderWaveform('vocalWaveform', vBuf, CONFIG.COLOR.vocal);
     renderWaveform('drumWaveform',  dBuf, CONFIG.COLOR.drum);
 }
 
 function renderStats(elId, buf) {
-    const ch      = buf.getChannelData(0);
-    const sr      = buf.sampleRate;
-    const dur     = buf.duration;
-    const peak    = Math.max(...Array.from(ch).map(Math.abs));
-    const rms     = Math.sqrt(ch.reduce((s, v) => s + v * v, 0) / ch.length);
-    const centroid = computeCentroid(ch, sr);
-    const dcOffset = ch.reduce((s, v) => s + v, 0) / ch.length;
-    const crest   = peak / (rms || 1);
-
+    const ch = buf.getChannelData(0), sr = buf.sampleRate;
+    const peak = ch.reduce((m,v) => Math.max(m,Math.abs(v)), 0);
+    const rms  = Math.sqrt(ch.reduce((s,v) => s+v*v, 0) / ch.length);
+    const dc   = ch.reduce((s,v) => s+v, 0) / ch.length;
     const rows = [
-        ['Duration',     `${dur.toFixed(3)} s`],
-        ['Sample Rate',  `${sr.toLocaleString()} Hz`],
+        ['Duration',     buf.duration.toFixed(3)+' s'],
+        ['Sample Rate',  sr.toLocaleString()+' Hz'],
         ['Channels',     buf.numberOfChannels],
         ['Peak Amp',     peak.toFixed(4)],
         ['RMS Energy',   rms.toFixed(4)],
-        ['Crest Factor', crest.toFixed(2)],
-        ['DC Offset',    dcOffset.toFixed(5)],
-        ['Freq Centroid',`${Math.round(centroid)} Hz`],
+        ['Crest Factor', (rms > 0 ? peak/rms : 0).toFixed(2)],
+        ['DC Offset',    dc.toFixed(5)],
+        ['Freq Centroid',Math.round(computeCentroid(ch,sr))+' Hz'],
         ['Samples',      ch.length.toLocaleString()],
     ];
-
-    document.getElementById(elId).innerHTML = rows.map(([k, v]) =>
+    document.getElementById(elId).innerHTML = rows.map(([k,v]) =>
         `<div class="stat-row"><span class="stat-key">${k}</span><span class="stat-val">${v}</span></div>`
     ).join('');
 }
 
 function computeCentroid(samples, sr) {
-    const fft   = simpleFFT(samples.slice(0, CONFIG.FFT_SIZE));
-    const freqRes = sr / CONFIG.FFT_SIZE;
-    let num = 0, den = 0;
-    fft.forEach((mag, i) => { num += mag * i * freqRes; den += mag; });
-    return den ? num / den : 0;
+    const fft = simpleFFT(samples.slice(0, CONFIG.FFT_SIZE));
+    const fr  = sr / CONFIG.FFT_SIZE;
+    let num=0, den=0;
+    fft.forEach((m,i) => { num += m*i*fr; den += m; });
+    return den > 0 ? num/den : 0;
 }
 
-function renderWaveform(canvasId, buf, color) {
-    const canvas = document.getElementById(canvasId);
-    const ctx    = canvas.getContext('2d');
-    const data   = buf.getChannelData(0);
-    const W      = canvas.offsetWidth || 400;
-    const H      = canvas.height;
-    canvas.width = W;
-
-    ctx.clearRect(0, 0, W, H);
-    ctx.strokeStyle = color;
-    ctx.lineWidth   = 1;
-    ctx.globalAlpha = 0.8;
-
-    const step = Math.ceil(data.length / W);
-    ctx.beginPath();
-    for (let x = 0; x < W; x++) {
-        let min = 1, max = -1;
-        for (let j = 0; j < step; j++) {
-            const s = data[x * step + j] || 0;
-            if (s < min) min = s;
-            if (s > max) max = s;
-        }
-        ctx.moveTo(x, (1 + min) * H / 2);
-        ctx.lineTo(x, (1 + max) * H / 2);
+function renderWaveform(id, buf, color) {
+    const c = document.getElementById(id), ctx2 = c.getContext('2d');
+    const data = buf.getChannelData(0);
+    const W = c.parentElement.offsetWidth || 360, H = c.height;
+    c.width = W; ctx2.clearRect(0,0,W,H);
+    ctx2.strokeStyle = color; ctx2.lineWidth = 1; ctx2.globalAlpha = 0.85;
+    const step = Math.max(1, Math.floor(data.length/W));
+    ctx2.beginPath();
+    for (let x=0; x<W; x++) {
+        let mn=1, mx=-1;
+        for (let j=0; j<step; j++) { const s=data[x*step+j]||0; if(s<mn)mn=s; if(s>mx)mx=s; }
+        ctx2.moveTo(x,(1+mn)*H/2); ctx2.lineTo(x,(1+mx)*H/2);
     }
-    ctx.stroke();
+    ctx2.stroke();
 }
-
-// ─── PANEL 2: DEEP EXAMINATION ───────────────────────────────────────────────
 
 function renderExamination(vBuf, dBuf) {
-    const vEnergy = computeEnergyOverTime(vBuf.getChannelData(0));
-    const dEnergy = computeEnergyOverTime(dBuf.getChannelData(0));
-    const vBands  = computeFrequencyBands(vBuf.getChannelData(0), vBuf.sampleRate);
-    const dBands  = computeFrequencyBands(dBuf.getChannelData(0), dBuf.sampleRate);
-
-    renderLineChart('vocalEnergy', vEnergy, 'RMS', CONFIG.COLOR.vocal);
-    renderLineChart('drumEnergy',  dEnergy, 'RMS', CONFIG.COLOR.drum);
-    renderBarChart('vocalBands',   vBands,  CONFIG.COLOR.vocal);
-    renderBarChart('drumBands',    dBands,  CONFIG.COLOR.drum);
+    const vE = computeEnergy(vBuf.getChannelData(0)), dE = computeEnergy(dBuf.getChannelData(0));
+    const vB = computeBands(vBuf.getChannelData(0), vBuf.sampleRate);
+    const dB = computeBands(dBuf.getChannelData(0), dBuf.sampleRate);
+    renderLine('vocalEnergy', vE, 'RMS', CONFIG.COLOR.vocal);
+    renderLine('drumEnergy',  dE, 'RMS', CONFIG.COLOR.drum);
+    renderBar('vocalBands',   vB, CONFIG.COLOR.vocal);
+    renderBar('drumBands',    dB, CONFIG.COLOR.drum);
 }
 
-function computeEnergyOverTime(samples) {
-    const W   = CONFIG.ENERGY_WINDOW_SIZE;
-    const out = [];
-    for (let i = 0; i < samples.length; i += W) {
-        const chunk = samples.slice(i, i + W);
-        const rms   = Math.sqrt(chunk.reduce((s, v) => s + v * v, 0) / chunk.length);
-        out.push(parseFloat(rms.toFixed(4)));
+function computeEnergy(samples) {
+    const W=CONFIG.ENERGY_WINDOW_SIZE, out=[];
+    for (let i=0; i<samples.length; i+=W) {
+        const c=samples.slice(i,i+W);
+        out.push(parseFloat(Math.sqrt(c.reduce((s,v)=>s+v*v,0)/c.length).toFixed(4)));
     }
     return out;
 }
 
-function computeFrequencyBands(samples, sr) {
-    const fft    = simpleFFT(samples.slice(0, CONFIG.FFT_SIZE));
-    const freqRes = sr / CONFIG.FFT_SIZE;
-    const bands  = {};
-    for (const [name, [lo, hi]] of Object.entries(CONFIG.BAND_RANGES)) {
-        const loIdx = Math.floor(lo / freqRes);
-        const hiIdx = Math.floor(hi / freqRes);
-        const slice = fft.slice(loIdx, hiIdx);
-        bands[name] = slice.length
-            ? parseFloat((slice.reduce((s, v) => s + v, 0) / slice.length).toFixed(4))
-            : 0;
+function computeBands(samples, sr) {
+    const fft=simpleFFT(samples.slice(0,CONFIG.FFT_SIZE)), fr=sr/CONFIG.FFT_SIZE, out={};
+    for (const [n,[lo,hi]] of Object.entries(CONFIG.BAND_RANGES)) {
+        const s=fft.slice(Math.floor(lo/fr), Math.floor(hi/fr));
+        out[n] = s.length ? parseFloat((s.reduce((a,v)=>a+v,0)/s.length).toFixed(4)) : 0;
     }
-    return bands;
+    return out;
 }
 
-function renderLineChart(canvasId, data, label, color) {
-    destroyChart(canvasId);
-    STATE.charts[canvasId] = new Chart(
-        document.getElementById(canvasId).getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: data.map((_, i) => i),
-            datasets: [{ label, data, borderColor: color, backgroundColor: color + '22',
-                borderWidth: 1, pointRadius: 0, fill: true, tension: 0.3 }],
-        },
-        options: chartOptions('Frame', 'RMS'),
+function renderLine(id, data, label, color) {
+    destroyChart(id);
+    STATE.charts[id] = new Chart(document.getElementById(id).getContext('2d'), {
+        type:'line', data:{ labels:data.map((_,i)=>i),
+        datasets:[{label,data,borderColor:color,backgroundColor:color+'22',borderWidth:1,pointRadius:0,fill:true,tension:0.3}]},
+        options:chartOpts('Frame','RMS'),
     });
 }
 
-function renderBarChart(canvasId, bands, color) {
-    destroyChart(canvasId);
-    STATE.charts[canvasId] = new Chart(
-        document.getElementById(canvasId).getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: Object.keys(bands).map(k => k.toUpperCase()),
-            datasets: [{ label: 'Energy', data: Object.values(bands),
-                backgroundColor: color + '99', borderColor: color, borderWidth: 1 }],
-        },
-        options: chartOptions('Band', 'Avg Magnitude'),
+function renderBar(id, bands, color) {
+    destroyChart(id);
+    STATE.charts[id] = new Chart(document.getElementById(id).getContext('2d'), {
+        type:'bar', data:{ labels:Object.keys(bands).map(k=>k.toUpperCase()),
+        datasets:[{label:'Energy',data:Object.values(bands),backgroundColor:color+'99',borderColor:color,borderWidth:1}]},
+        options:chartOpts('Band','Avg Magnitude'),
     });
 }
-
-// ─── PANEL 3: INTERPLAY ──────────────────────────────────────────────────────
 
 async function renderInterplay(vBuf, dBuf) {
-    const vEnergy = computeEnergyOverTime(vBuf.getChannelData(0));
-    const dEnergy = computeEnergyOverTime(dBuf.getChannelData(0));
-    const vOnsets = detectOnsets(vBuf.getChannelData(0));
-    const dOnsets = detectOnsets(dBuf.getChannelData(0));
-
-    const matrix  = buildLatencyMatrix(vOnsets, dOnsets, vBuf.sampleRate);
-    const overlap  = buildOverlap(vEnergy, dEnergy);
-    const sync     = buildSyncTimeline(vOnsets, dOnsets, vBuf.sampleRate, vBuf.duration);
-
-    const avgLat   = matrix.length ? matrix.reduce((s, m) => s + Math.abs(m.latency), 0) / matrix.length : 0;
-    const lockPct  = matrix.length ? (matrix.filter(m => Math.abs(m.latency) < CONFIG.LATENCY_THRESHOLD_MS).length / matrix.length * 100) : 0;
-    const energyCorr = pearsonCorr(vEnergy, dEnergy);
-
-    renderScores(avgLat, lockPct, energyCorr);
-    renderScatterChart('interplayChart', matrix, 'Latency (ms)', 'Timestamp (s)', 'Latency (ms)');
-    renderDualLine('energyOverlap', vEnergy, dEnergy);
-    renderSyncTimeline('onsetSync', sync, vBuf.duration);
+    const vE=computeEnergy(vBuf.getChannelData(0)), dE=computeEnergy(dBuf.getChannelData(0));
+    const vO=detectOnsets(vBuf.getChannelData(0)), dO=detectOnsets(dBuf.getChannelData(0));
+    const matrix=buildMatrix(vO,dO,vBuf.sampleRate);
+    const sync=buildSync(vO,dO,vBuf.sampleRate,vBuf.duration);
+    const avg=matrix.length ? matrix.reduce((s,m)=>s+Math.abs(m.latency),0)/matrix.length : 0;
+    const lock=matrix.length ? matrix.filter(m=>Math.abs(m.latency)<CONFIG.LATENCY_THRESHOLD_MS).length/matrix.length*100 : 0;
+    const corr=pearson(vE,dE);
+    renderScores(avg,lock,corr);
+    renderScatter('interplayChart',matrix);
+    renderDual('energyOverlap',vE,dE);
+    renderSync('onsetSync',sync);
 }
 
 function detectOnsets(samples) {
-    const W       = CONFIG.ENERGY_WINDOW_SIZE;
-    const onsets  = [];
-    let prevEnergy = 0;
-    for (let i = 0; i < samples.length - W; i += W) {
-        const chunk = samples.slice(i, i + W);
-        const energy = chunk.reduce((s, v) => s + v * v, 0) / W;
-        if (energy > prevEnergy * 1.5 && energy > 0.001) onsets.push(i);
-        prevEnergy = energy;
+    const W=CONFIG.ENERGY_WINDOW_SIZE, out=[]; let prev=0;
+    for (let i=0; i<samples.length-W; i+=W) {
+        const c=samples.slice(i,i+W), e=c.reduce((s,v)=>s+v*v,0)/W;
+        if (e>prev*1.5 && e>0.001) out.push(i);
+        prev=e;
     }
-    return onsets;
+    return out;
 }
 
-function buildLatencyMatrix(vOnsets, dOnsets, sr) {
-    const matrix = [];
-    const maxLen = Math.max(vOnsets.length, dOnsets.length);
-    for (let i = 0; i < maxLen; i++) {
-        const v = vOnsets[i];
-        const d = dOnsets[i];
-        if (v !== undefined && d !== undefined) {
-            matrix.push({
-                time:    parseFloat((v / sr).toFixed(3)),
-                latency: parseFloat(((v - d) / sr * 1000).toFixed(2)),
-            });
-        }
+function buildMatrix(vO,dO,sr) {
+    const out=[];
+    for (let i=0; i<Math.max(vO.length,dO.length); i++) {
+        if (vO[i]!==undefined && dO[i]!==undefined)
+            out.push({time:parseFloat((vO[i]/sr).toFixed(3)), latency:parseFloat(((vO[i]-dO[i])/sr*1000).toFixed(2))});
     }
-    return matrix;
+    return out;
 }
 
-function buildOverlap(vEnergy, dEnergy) {
-    const len = Math.min(vEnergy.length, dEnergy.length);
-    return Array.from({ length: len }, (_, i) => ({ v: vEnergy[i], d: dEnergy[i] }));
+function buildSync(vO,dO,sr,dur) {
+    const res=100, tl=Array.from({length:res},(_,i)=>({t:parseFloat((i/res*dur).toFixed(2)),vocal:0,drum:0}));
+    vO.forEach(s=>{const i=Math.min(res-1,Math.floor(s/sr/dur*res)); tl[i].vocal=1;});
+    dO.forEach(s=>{const i=Math.min(res-1,Math.floor(s/sr/dur*res)); tl[i].drum=1;});
+    return tl;
 }
 
-function buildSyncTimeline(vOnsets, dOnsets, sr, duration) {
-    const resolution = 100;
-    const timeline   = Array.from({ length: resolution }, (_, i) => ({
-        t:     parseFloat((i / resolution * duration).toFixed(2)),
-        vocal: 0,
-        drum:  0,
-    }));
-    vOnsets.forEach(s => {
-        const idx = Math.floor(s / sr / duration * resolution);
-        if (timeline[idx]) timeline[idx].vocal = 1;
-    });
-    dOnsets.forEach(s => {
-        const idx = Math.floor(s / sr / duration * resolution);
-        if (timeline[idx]) timeline[idx].drum = 1;
-    });
-    return timeline;
+function pearson(a,b) {
+    const n=Math.min(a.length,b.length), aS=a.slice(0,n), bS=b.slice(0,n);
+    const am=aS.reduce((s,v)=>s+v,0)/n, bm=bS.reduce((s,v)=>s+v,0)/n;
+    let num=0,ad=0,bd=0;
+    for(let i=0;i<n;i++){const da=aS[i]-am,db=bS[i]-bm; num+=da*db; ad+=da*da; bd+=db*db;}
+    return ad&&bd ? parseFloat((num/Math.sqrt(ad*bd)).toFixed(3)) : 0;
 }
 
-function pearsonCorr(a, b) {
-    const len  = Math.min(a.length, b.length);
-    const aS   = a.slice(0, len), bS = b.slice(0, len);
-    const aMean = aS.reduce((s, v) => s + v, 0) / len;
-    const bMean = bS.reduce((s, v) => s + v, 0) / len;
-    let num = 0, aDen = 0, bDen = 0;
-    for (let i = 0; i < len; i++) {
-        const da = aS[i] - aMean, db = bS[i] - bMean;
-        num += da * db; aDen += da * da; bDen += db * db;
-    }
-    return aDen && bDen ? parseFloat((num / Math.sqrt(aDen * bDen)).toFixed(3)) : 0;
+function renderScores(avg,lock,corr) {
+    const sc=v=>v>=70?'score-good':v>=40?'score-mid':'score-bad';
+    document.getElementById('interplay-scores').innerHTML=`
+        <div class="score-block"><div class="score-label">SYNC LOCK</div><div class="score-value ${sc(lock)}">${lock.toFixed(1)}%</div></div>
+        <div class="score-block"><div class="score-label">AVG LATENCY</div><div class="score-value ${avg<20?'score-good':avg<50?'score-mid':'score-bad'}">${avg.toFixed(1)}ms</div></div>
+        <div class="score-block"><div class="score-label">ENERGY CORR</div><div class="score-value ${sc((corr+1)/2*100)}">${corr}</div></div>`;
 }
 
-function renderScores(avgLat, lockPct, corr) {
-    const scoreClass = v => v >= 70 ? 'score-good' : v >= 40 ? 'score-mid' : 'score-bad';
-    document.getElementById('interplay-scores').innerHTML = `
-        <div class="score-block">
-            <div class="score-label">SYNC LOCK</div>
-            <div class="score-value ${scoreClass(lockPct)}">${lockPct.toFixed(1)}%</div>
-        </div>
-        <div class="score-block">
-            <div class="score-label">AVG LATENCY</div>
-            <div class="score-value ${avgLat < 20 ? 'score-good' : avgLat < 50 ? 'score-mid' : 'score-bad'}">${avgLat.toFixed(1)}ms</div>
-        </div>
-        <div class="score-block">
-            <div class="score-label">ENERGY CORR</div>
-            <div class="score-value ${scoreClass((corr + 1) / 2 * 100)}">${corr}</div>
-        </div>
-    `;
-}
-
-function renderScatterChart(canvasId, matrix, label, xLabel, yLabel) {
-    destroyChart(canvasId);
-    STATE.charts[canvasId] = new Chart(
-        document.getElementById(canvasId).getContext('2d'), {
-        type: 'scatter',
-        data: {
-            datasets: [{
-                label,
-                data: matrix.map(m => ({ x: m.time, y: m.latency })),
-                backgroundColor: matrix.map(m =>
-                    Math.abs(m.latency) < CONFIG.LATENCY_THRESHOLD_MS
-                        ? CONFIG.COLOR.locked : CONFIG.COLOR.drift),
-                pointRadius: 5,
-            }],
-        },
-        options: chartOptions(xLabel, yLabel),
+function renderScatter(id, matrix) {
+    destroyChart(id);
+    STATE.charts[id] = new Chart(document.getElementById(id).getContext('2d'), {
+        type:'scatter', data:{datasets:[{label:'Latency (ms)',
+        data:matrix.map(m=>({x:m.time,y:m.latency})),
+        backgroundColor:matrix.map(m=>Math.abs(m.latency)<CONFIG.LATENCY_THRESHOLD_MS?CONFIG.COLOR.locked:CONFIG.COLOR.drift),
+        pointRadius:5}]}, options:chartOpts('Timestamp (s)','Latency (ms)'),
     });
 }
 
-function renderDualLine(canvasId, vEnergy, dEnergy) {
-    destroyChart(canvasId);
-    const len = Math.min(vEnergy.length, dEnergy.length);
-    STATE.charts[canvasId] = new Chart(
-        document.getElementById(canvasId).getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: Array.from({ length: len }, (_, i) => i),
-            datasets: [
-                { label: 'Vocal', data: vEnergy.slice(0, len), borderColor: CONFIG.COLOR.vocal,
-                  backgroundColor: CONFIG.COLOR.vocal + '22', borderWidth: 1, pointRadius: 0, fill: true, tension: 0.3 },
-                { label: 'Drum',  data: dEnergy.slice(0, len), borderColor: CONFIG.COLOR.drum,
-                  backgroundColor: CONFIG.COLOR.drum + '22',  borderWidth: 1, pointRadius: 0, fill: true, tension: 0.3 },
-            ],
-        },
-        options: chartOptions('Frame', 'RMS'),
+function renderDual(id, vE, dE) {
+    destroyChart(id);
+    const n=Math.min(vE.length,dE.length);
+    STATE.charts[id] = new Chart(document.getElementById(id).getContext('2d'), {
+        type:'line', data:{labels:Array.from({length:n},(_,i)=>i), datasets:[
+            {label:'Vocal',data:vE.slice(0,n),borderColor:CONFIG.COLOR.vocal,backgroundColor:CONFIG.COLOR.vocal+'22',borderWidth:1,pointRadius:0,fill:true,tension:0.3},
+            {label:'Drum', data:dE.slice(0,n),borderColor:CONFIG.COLOR.drum, backgroundColor:CONFIG.COLOR.drum+'22', borderWidth:1,pointRadius:0,fill:true,tension:0.3},
+        ]}, options:chartOpts('Frame','RMS'),
     });
 }
 
-function renderSyncTimeline(canvasId, sync, duration) {
-    destroyChart(canvasId);
-    STATE.charts[canvasId] = new Chart(
-        document.getElementById(canvasId).getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: sync.map(s => s.t.toFixed(1)),
-            datasets: [
-                { label: 'Vocal Onsets', data: sync.map(s => s.vocal), backgroundColor: CONFIG.COLOR.vocal + 'cc' },
-                { label: 'Drum Onsets',  data: sync.map(s => s.drum),  backgroundColor: CONFIG.COLOR.drum  + 'cc' },
-            ],
-        },
-        options: {
-            ...chartOptions('Time (s)', 'Onset'),
-            scales: {
-                ...chartOptions('Time (s)', 'Onset').scales,
-                y: { ...chartOptions('Time (s)', 'Onset').scales.y, max: 1.2 },
-            },
-        },
+function renderSync(id, sync) {
+    destroyChart(id);
+    STATE.charts[id] = new Chart(document.getElementById(id).getContext('2d'), {
+        type:'bar', data:{labels:sync.map(s=>s.t.toFixed(1)), datasets:[
+            {label:'Vocal Onsets',data:sync.map(s=>s.vocal),backgroundColor:CONFIG.COLOR.vocal+'cc'},
+            {label:'Drum Onsets', data:sync.map(s=>s.drum), backgroundColor:CONFIG.COLOR.drum+'cc'},
+        ]}, options:{...chartOpts('Time (s)','Onset'), scales:{x:chartOpts('Time (s)','Onset').scales.x, y:{...chartOpts('Time (s)','Onset').scales.y,max:1.2}}},
     });
 }
 
-// ─── DEMO MODE ───────────────────────────────────────────────────────────────
-
-function runDemo() {
-    setStatus('Demo mode — simulated stems.');
-
-    const sr      = 44100;
-    const dur     = 10;
-    const samples = sr * dur;
-
-    const vData = new Float32Array(samples).map(() => (Math.random() * 2 - 1) * 0.6);
-    const dData = new Float32Array(samples).map((_, i) =>
-        i % Math.floor(sr * 0.5) < 1000 ? (Math.random() * 2 - 1) * 0.9 : (Math.random() * 2 - 1) * 0.1
-    );
-
-    STATE.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const vBuf = STATE.audioCtx.createBuffer(1, samples, sr);
-    const dBuf = STATE.audioCtx.createBuffer(1, samples, sr);
-    vBuf.getChannelData(0).set(vData);
-    dBuf.getChannelData(0).set(dData);
-
-    STATE.vocalBuffer = vBuf;
-    STATE.drumBuffer  = dBuf;
-
-    renderForensics(vBuf, dBuf);
-    renderExamination(vBuf, dBuf);
-    renderInterplay(vBuf, dBuf);
-
-    setStatus('');
-    showPanels();
+function chartOpts(xL,yL) {
+    return { responsive:true, animation:{duration:300},
+        plugins:{legend:{labels:{color:'#444',font:{family:'monospace',size:10}}}},
+        scales:{
+            x:{title:{display:true,text:xL,color:'#333'},ticks:{color:CONFIG.COLOR.tick,font:{family:'monospace',size:9},maxTicksLimit:8},grid:{color:CONFIG.COLOR.grid}},
+            y:{title:{display:true,text:yL,color:'#333'},ticks:{color:CONFIG.COLOR.tick,font:{family:'monospace',size:9}},grid:{color:CONFIG.COLOR.grid}},
+        }};
 }
 
-// ─── UTILITIES ───────────────────────────────────────────────────────────────
-
-function chartOptions(xLabel, yLabel) {
-    return {
-        responsive: true,
-        animation:  { duration: 400 },
-        plugins: {
-            legend: { labels: { color: '#444', font: { family: 'monospace', size: 10 } } },
-        },
-        scales: {
-            x: {
-                title: { display: true, text: xLabel, color: '#333' },
-                ticks: { color: CONFIG.COLOR.tick, font: { family: 'monospace', size: 9 }, maxTicksLimit: 8 },
-                grid:  { color: CONFIG.COLOR.grid },
-            },
-            y: {
-                title: { display: true, text: yLabel, color: '#333' },
-                ticks: { color: CONFIG.COLOR.tick, font: { family: 'monospace', size: 9 } },
-                grid:  { color: CONFIG.COLOR.grid },
-            },
-        },
-    };
-}
-
-function destroyChart(id) {
-    if (STATE.charts[id]) { STATE.charts[id].destroy(); delete STATE.charts[id]; }
-}
+function destroyChart(id) { if(STATE.charts[id]){STATE.charts[id].destroy(); delete STATE.charts[id];} }
 
 function simpleFFT(samples) {
-    const N   = samples.length;
-    const mag = new Array(N / 2).fill(0);
-    for (let k = 0; k < N / 2; k++) {
-        let re = 0, im = 0;
-        for (let n = 0; n < N; n++) {
-            const angle = (2 * Math.PI * k * n) / N;
-            re += samples[n] * Math.cos(angle);
-            im -= samples[n] * Math.sin(angle);
-        }
-        mag[k] = Math.sqrt(re * re + im * im) / N;
+    const N=samples.length, mag=new Array(Math.floor(N/2)).fill(0);
+    for(let k=0;k<mag.length;k++){
+        let re=0,im=0;
+        for(let n=0;n<N;n++){const a=(2*Math.PI*k*n)/N; re+=samples[n]*Math.cos(a); im-=samples[n]*Math.sin(a);}
+        mag[k]=Math.sqrt(re*re+im*im)/N;
     }
     return mag;
 }
 
-function showPanels() {
-    document.querySelectorAll('.panel').forEach(p => p.classList.add('active'));
-}
-
-function setStatus(msg) {
-    document.getElementById('status').textContent = msg;
-}
+function showPanels() { document.querySelectorAll('.panel').forEach(p=>p.classList.add('active')); }
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
