@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interplay Engine</title>
+    <title>WAVIE</title> <!-- Changed title -->
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -13,31 +13,35 @@
     <!-- TOP NAV -->
     <nav id="topnav">
         <div class="nav-left">
-            <label class="nav-btn" for="vocalFile">VOCAL</label>
-            <input type="file" id="vocalFile" accept=".mp3,.wav,audio/*">
-            <label class="nav-btn" for="drumFile">DRUM</label>
-            <input type="file" id="drumFile" accept=".mp3,.wav,audio/*">
-            <span id="vocalName" class="nav-tag">no file</span>
-            <span class="nav-dot">·</span>
-            <span id="drumName" class="nav-tag">no file</span>
+             <!-- Emptied for visual simplicity, matching the image -->
         </div>
         <div class="nav-center">
-            <span id="projectTitle">INTERPLAY ENGINE</span>
+            <!-- New header content from image -->
+            <div class="header-extra">
+                <span>+ SCAR</span> <span>JD</span> <span>JIE</span> <span>15</span> <span>SALLIE</span>&nbsp;&nbsp;&nbsp;
+                <span>NACO</span> <span>VANE</span> <span>WRONG</span> <span>HOEL</span>&nbsp;&nbsp;&nbsp;
+                <span>E.LEE</span> <span>ORY</span> <span>GEE</span>&nbsp;&nbsp;&nbsp;
+                <span>LEINFER</span>
+            </div>
+            <div class="header-main">
+                <span>NARA</span> <span class="nav-dot">·</span> <span>AUDIO</span> <span class="nav-dot">·</span> <span>INCENT</span> <span class="nav-dot">·</span> <span>MASTER</span>
+            </div>
+            <span id="projectTitle">WAVIE</span>
         </div>
         <div class="nav-right">
-            <span id="bpmDisplay" class="nav-tag">-- BPM</span>
-            <button class="nav-btn" id="analyzeBtn" onclick="handleAnalyze()" disabled>ANALYZE</button>
-            <button class="nav-btn dim" onclick="runDemo()">DEMO</button>
+             <!-- Emptied for visual simplicity -->
         </div>
     </nav>
 
     <!-- STATUS -->
-    <div id="statusBar"><span id="status">Load stems or hit DEMO</span></div>
+    <!-- The text is now on the waveform, so this might not be needed or can be repurposed -->
+    <div id="statusBar" style="display: none;"><span id="status"></span></div>
 
     <!-- WAVEFORM DISPLAY -->
     <div id="waveStation">
         <div id="waveLabel">
-            <input id="lyricInput" type="text" placeholder="type lyric or label..." maxlength="80">
+            <!-- Set value to match image text -->
+            <input id="lyricInput" type="text" value="the truth hits clean, hits, but the life around it is crooked." maxlength="80">
         </div>
         <canvas id="waveCanvas"></canvas>
         <canvas id="specCanvas"></canvas>
@@ -45,24 +49,33 @@
 
     <!-- SEQUENCER -->
     <div id="sequencer">
-        <div class="seq-header">
-            <span class="seq-title">ONSET GRID</span>
-            <span id="syncScore" class="seq-tag">SYNC --</span>
-            <span id="latencyScore" class="seq-tag">LAT --</span>
-            <span id="corrScore" class="seq-tag">CORR --</span>
+        <div class="seq-header" style="display: none;">
+            <!-- Not visible in the image -->
         </div>
         <div id="seqGrid">
-            <div class="seq-row" id="row-vocal"><span class="row-label">VOCAL</span><div class="row-cells" id="cells-vocal"></div></div>
-            <div class="seq-row" id="row-kick"> <span class="row-label">KICK</span> <div class="row-cells" id="cells-kick"></div></div>
-            <div class="seq-row" id="row-snare"><span class="row-label">SNARE</span><div class="row-cells" id="cells-snare"></div></div>
-            <div class="seq-row" id="row-hihat"><span class="row-label">HI-HAT</span><div class="row-cells" id="cells-hihat"></div></div>
-            <div class="seq-row" id="row-perc"> <span class="row-label">PERC</span> <div class="row-cells" id="cells-perc"></div></div>
+            <!-- Added a container for dial and labels to match layout -->
+            <div class="seq-controls">
+                <div class="dial"></div>
+                <div class="instrument-labels">
+                    <span class="row-label">◊ KICK</span>
+                    <span class="row-label">◊ SNARE</span>
+                    <span class="row-label">◊ HI-HAT</span>
+                    <span class="row-label">◊ PERC</span>
+                </div>
+            </div>
+            <div class="seq-rows-container">
+                <!-- Removed VOCAL row -->
+                <div class="seq-row" id="row-kick"> <div class="row-cells" id="cells-kick"></div></div>
+                <div class="seq-row" id="row-snare"><div class="row-cells" id="cells-snare"></div></div>
+                <div class="seq-row" id="row-hihat"><div class="row-cells" id="cells-hihat"></div></div>
+                <div class="seq-row" id="row-perc"> <div class="row-cells" id="cells-perc"></div></div>
+                <div id="seqRuler"></div>
+            </div>
         </div>
-        <div id="seqRuler"></div>
     </div>
 
-    <!-- ANALYSIS PANELS -->
-    <div id="panels">
+    <!-- ANALYSIS PANELS (hidden) -->
+    <div id="panels" style="display: none;">
 
         <section class="panel" id="panel-forensics">
             <div class="panel-header">01 — FILE FORENSICS</div>
@@ -101,6 +114,7 @@
 
     </div>
 </div>
+<!-- Keep the script, it's probably important -->
 <script src="analyzer.js" defer></script>
 </body>
 </html>
