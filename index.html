@@ -3,99 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadence-Beat Interplay Engine</title>
+    <title>Interplay Engine</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div id="app">
-        <header>
-            <h1>Cadence-Beat Interplay Engine</h1>
-            <p class="subtitle">Vocal x Drum Stem Analysis</p>
-        </header>
+<div id="app">
 
-        <div id="upload-zone">
-            <label class="stem-upload" for="vocalFile">
-                <div class="stem-label">VOCAL STEM</div>
-                <input type="file" id="vocalFile" accept=".mp3,.wav,audio/*">
-                <div class="file-name" id="vocalName">Tap to load vocal stem</div>
-            </label>
-            <div class="stem-divider">x</div>
-            <label class="stem-upload" for="drumFile">
-                <div class="stem-label">DRUM STEM</div>
-                <input type="file" id="drumFile" accept=".mp3,.wav,audio/*">
-                <div class="file-name" id="drumName">Tap to load drum stem</div>
-            </label>
+    <!-- TOP NAV -->
+    <nav id="topnav">
+        <div class="nav-left">
+            <label class="nav-btn" for="vocalFile">VOCAL</label>
+            <input type="file" id="vocalFile" accept=".mp3,.wav,audio/*">
+            <label class="nav-btn" for="drumFile">DRUM</label>
+            <input type="file" id="drumFile" accept=".mp3,.wav,audio/*">
+            <span id="vocalName" class="nav-tag">no file</span>
+            <span class="nav-dot">·</span>
+            <span id="drumName" class="nav-tag">no file</span>
         </div>
+        <div class="nav-center">
+            <span id="projectTitle">INTERPLAY ENGINE</span>
+        </div>
+        <div class="nav-right">
+            <span id="bpmDisplay" class="nav-tag">-- BPM</span>
+            <button class="nav-btn" id="analyzeBtn" onclick="handleAnalyze()" disabled>ANALYZE</button>
+            <button class="nav-btn dim" onclick="runDemo()">DEMO</button>
+        </div>
+    </nav>
 
-        <div id="action-bar">
-            <button id="analyzeBtn" onclick="handleAnalyze()" disabled>Analyze</button>
-            <button id="demoBtn" onclick="runDemo()">Demo Mode</button>
-        </div>
+    <!-- STATUS -->
+    <div id="statusBar"><span id="status">Load stems or hit DEMO</span></div>
 
-        <div id="status-bar">
-            <span id="status">Loading...</span>
+    <!-- WAVEFORM DISPLAY -->
+    <div id="waveStation">
+        <div id="waveLabel">
+            <input id="lyricInput" type="text" placeholder="type lyric or label..." maxlength="80">
         </div>
+        <canvas id="waveCanvas"></canvas>
+        <canvas id="specCanvas"></canvas>
+    </div>
+
+    <!-- SEQUENCER -->
+    <div id="sequencer">
+        <div class="seq-header">
+            <span class="seq-title">ONSET GRID</span>
+            <span id="syncScore" class="seq-tag">SYNC --</span>
+            <span id="latencyScore" class="seq-tag">LAT --</span>
+            <span id="corrScore" class="seq-tag">CORR --</span>
+        </div>
+        <div id="seqGrid">
+            <div class="seq-row" id="row-vocal"><span class="row-label">VOCAL</span><div class="row-cells" id="cells-vocal"></div></div>
+            <div class="seq-row" id="row-kick"> <span class="row-label">KICK</span> <div class="row-cells" id="cells-kick"></div></div>
+            <div class="seq-row" id="row-snare"><span class="row-label">SNARE</span><div class="row-cells" id="cells-snare"></div></div>
+            <div class="seq-row" id="row-hihat"><span class="row-label">HI-HAT</span><div class="row-cells" id="cells-hihat"></div></div>
+            <div class="seq-row" id="row-perc"> <span class="row-label">PERC</span> <div class="row-cells" id="cells-perc"></div></div>
+        </div>
+        <div id="seqRuler"></div>
+    </div>
+
+    <!-- ANALYSIS PANELS -->
+    <div id="panels">
 
         <section class="panel" id="panel-forensics">
-            <div class="panel-header">01 - File Forensics</div>
+            <div class="panel-header">01 — FILE FORENSICS</div>
             <div class="forensics-grid">
                 <div class="forensic-col">
-                    <div class="col-label">VOCAL</div>
+                    <div class="col-label vocal-color">VOCAL</div>
                     <div id="vocal-stats"></div>
-                    <canvas id="vocalWaveform" height="80"></canvas>
+                    <canvas id="vocalWaveform" height="60"></canvas>
                 </div>
                 <div class="forensic-col">
-                    <div class="col-label">DRUM</div>
+                    <div class="col-label drum-color">DRUM</div>
                     <div id="drum-stats"></div>
-                    <canvas id="drumWaveform" height="80"></canvas>
+                    <canvas id="drumWaveform" height="60"></canvas>
                 </div>
             </div>
         </section>
 
         <section class="panel" id="panel-examination">
-            <div class="panel-header">02 - Deep Examination</div>
+            <div class="panel-header">02 — DEEP EXAMINATION</div>
             <div class="exam-grid">
-                <div class="exam-block">
-                    <div class="block-label">Vocal Energy Over Time</div>
-                    <canvas id="vocalEnergy"></canvas>
-                </div>
-                <div class="exam-block">
-                    <div class="block-label">Drum Energy Over Time</div>
-                    <canvas id="drumEnergy"></canvas>
-                </div>
-                <div class="exam-block">
-                    <div class="block-label">Vocal Frequency Bands</div>
-                    <canvas id="vocalBands"></canvas>
-                </div>
-                <div class="exam-block">
-                    <div class="block-label">Drum Frequency Bands</div>
-                    <canvas id="drumBands"></canvas>
-                </div>
+                <div class="exam-block"><div class="block-label">Vocal Energy</div><canvas id="vocalEnergy"></canvas></div>
+                <div class="exam-block"><div class="block-label">Drum Energy</div><canvas id="drumEnergy"></canvas></div>
+                <div class="exam-block"><div class="block-label">Vocal Freq Bands</div><canvas id="vocalBands"></canvas></div>
+                <div class="exam-block"><div class="block-label">Drum Freq Bands</div><canvas id="drumBands"></canvas></div>
             </div>
         </section>
 
         <section class="panel" id="panel-interplay">
-            <div class="panel-header">03 - Interplay Analysis</div>
-            <div id="interplay-scores"></div>
-            <div class="interplay-grid">
-                <div class="exam-block">
-                    <div class="block-label">Latency Map</div>
-                    <canvas id="interplayChart"></canvas>
-                </div>
-                <div class="exam-block">
-                    <div class="block-label">Energy Overlap</div>
-                    <canvas id="energyOverlap"></canvas>
-                </div>
-                <div class="exam-block full-width">
-                    <div class="block-label">Onset Sync Timeline</div>
-                    <canvas id="onsetSync"></canvas>
-                </div>
+            <div class="panel-header">03 — INTERPLAY</div>
+            <div class="exam-grid">
+                <div class="exam-block"><div class="block-label">Latency Map</div><canvas id="interplayChart"></canvas></div>
+                <div class="exam-block"><div class="block-label">Energy Overlap</div><canvas id="energyOverlap"></canvas></div>
+                <div class="exam-block full-width"><div class="block-label">Onset Sync Timeline</div><canvas id="onsetSync"></canvas></div>
             </div>
         </section>
-    </div>
 
-    <!-- script deferred — fires after full DOM parse -->
-    <script src="analyzer.js" defer></script>
+    </div>
+</div>
+<script src="analyzer.js" defer></script>
 </body>
 </html>
