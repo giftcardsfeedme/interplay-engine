@@ -1,0 +1,6 @@
+{
+  "name": "Wavie Interplay Engine",
+  "description": "DAW-style cadence-beat analysis (Imported from giftcardsfeedme/interplay-engine).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
