@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node server.js",
-    "build": "echo 'No build step'",
+    "build": "vite build",
     "preview": "node server.js",
     "start": "node server.js",
     "clean": "rm -rf dist",
