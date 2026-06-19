@@ -29,11 +29,10 @@
         <div class="nav-right">
             <span id="bpmDisplay" class="nav-tag">-- BPM</span>
             <button class="nav-btn" id="analyzeBtn" onclick="handleAnalyze()" disabled>ANALYZE</button>
-            <button class="nav-btn dim" onclick="runDemo()">DEMO</button>
         </div>
     </nav>
 
-    <div id="statusBar"><span id="status">Load stems or hit DEMO</span></div>
+    <div id="statusBar"><span id="status">Load stems</span></div>
 
     <div id="waveStation-container">
         <div class="wave-header">
@@ -41,7 +40,7 @@
         </div>
         <div id="waveStation">
             <div id="waveLabel">
-                <input id="lyricInput" type="text" value="the truth hits clean, hits, but the life around it is crooked." maxlength="80">
+                <input id="lyricInput" type="text" value="" maxlength="80">
             </div>
             <canvas id="waveCanvas"></canvas>
             <canvas id="specCanvas"></canvas>

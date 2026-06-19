@@ -31,7 +31,7 @@ function destroyChart(id) { if(STATE.charts[id]){STATE.charts[id].destroy();dele
 function showPanels() { document.querySelectorAll('.panel').forEach(p=>p.classList.add('active')); }
 
 window.addEventListener('DOMContentLoaded', () => {
-    setStatus('Load stems or hit DEMO');
+    setStatus('Load stems');
     document.getElementById('vocalFile').addEventListener('change', e => {
         const f=e.target.files[0]; if(!f) return;
         document.getElementById('vocalName').textContent = f.name;
@@ -70,17 +70,6 @@ async function handleAnalyze() {
         runFullAnalysis(vBuf, dBuf);
     } catch(err){setStatus('Error: '+err.message);}
     finally{document.getElementById('analyzeBtn').disabled=false;}
-}
-
-async function runDemo() {
-    setStatus('Building demo...');
-    const actx=getACtx(); const sr=44100; const dur=8; const n=sr*dur;
-    const vData=new Float32Array(n).map((_,i)=>(Math.random()*2-1)*0.5*Math.sin(i/180));
-    const dData=new Float32Array(n).map((_,i)=>(i%Math.floor(sr*0.5))<2200?(Math.random()*2-1)*0.9:(Math.random()*2-1)*0.04);
-    const vBuf=actx.createBuffer(1,n,sr); vBuf.getChannelData(0).set(vData);
-    const dBuf=actx.createBuffer(1,n,sr); dBuf.getChannelData(0).set(dData);
-    STATE.vBuf=vBuf; STATE.dBuf=dBuf;
-    runFullAnalysis(vBuf, dBuf);
 }
 
 function runFullAnalysis(vBuf, dBuf) {
@@ -202,7 +191,7 @@ function estimateBPM(buf) {
     const onsets=detectOnsets(buf.getChannelData(0));
     if(onsets.length<2){document.getElementById('bpmDisplay').textContent='-- BPM';return;}
     const diffs=[];
-    for(let i=1;i<Math.min(onsets.length,20);i++) diffs.push(onsets[i]-onsets[i-1]);
+    for(let i=1;i<onsets.length;i++) diffs.push(onsets[i]-onsets[i-1]);
     const avgSamples=diffs.reduce((s,v)=>s+v,0)/diffs.length;
     const bpm=Math.round(60/(avgSamples/buf.sampleRate));
     document.getElementById('bpmDisplay').textContent=(bpm>40&&bpm<300?bpm:'--')+' BPM';
