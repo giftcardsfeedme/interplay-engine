@@ -2,7 +2,7 @@
     const CONFIG = {
         // ENTRY POINT: Insert your free HF Inference Endpoint URL & Token
         HF_ENDPOINT: 'https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-32B-Instruct',
-        HF_TOKEN: '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',
+        HF_TOKEN: '' /*[YOUR_TOKEN_HERE]*/,
         COOLDOWN_MS: 5000,
         SYSTEM_PROMPT: "You are an expert JavaScript debugger. Analyze this error, identify the root cause, and provide a corrected code snippet. Be concise."
     };
